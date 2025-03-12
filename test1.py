@@ -62,9 +62,6 @@ class LinearProgrammingSolver:
             tableau[row + 1, artificial_start + i] = 1  
 
         tableau[0, :num_vars] = -self.objective
-        for i, row in enumerate(artificial_vars):
-            tableau[0, :artificial_start] += self.big_m * tableau[row + 1, :artificial_start]
-            tableau[0, artificial_start + i] = self.big_m
 
         headers = (
             [f"x{i+1}" for i in range(num_vars)] + 
@@ -72,8 +69,14 @@ class LinearProgrammingSolver:
             [f"A{i+1}" for i in range(num_artificial)] + 
             ["RHS"]
         )
-
         self.basic_vars = [f"A{i+1}" for i in range(num_artificial)]
+        
+        self.log_step(tableau, headers)
+
+        for i, row in enumerate(artificial_vars):
+            tableau[0, :artificial_start] += self.big_m * tableau[row + 1, :artificial_start]
+            tableau[0, artificial_start + i] = self.big_m
+
 
         self.log_step(tableau, headers)
 
