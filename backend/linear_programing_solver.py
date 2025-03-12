@@ -329,8 +329,6 @@ class LinearProgrammingSolver:
         return "Goal Programming solution coming soon"
 
 
-
-# Example usage
 def main():
 
 
@@ -338,7 +336,7 @@ def main():
     constraints = [[1, 2, 2, 4], [2, -1, 1, 2], [4, -2, 1, -1]]
     rhs = [40, 8, 10]
     constraint_types = ['<=', '<=', '<=']
-    var_restrictions = ['>=0', '>=0', '>=0']
+    var_restrictions = ['>=','>=0', '>=0', '>=0']
     
 
 
@@ -348,6 +346,7 @@ def main():
     # constraint_types = ['<=', '>=']
     # var_restrictions = ['>=0', '>=0']
 
+
     # objective = [1, 2, 1]  
     # constraints = [[1, 1, 1], [2, -5, 1]]
     # rhs = [7, 10]
@@ -356,18 +355,9 @@ def main():
     
     # solver = LinearProgrammingSolver(objective, constraints, rhs, constraint_types, var_restrictions, method="big-m", type="min")
     # solution = solver.solve()
-
-    objective = [1, 2, 1]  
-    constraints = [[1, 1, 1], [2, -5, 1]]
-    rhs = [7, 10]
-    constraint_types = ['=', '>=']
-    var_restrictions = ['>=0', '>=0', '>=0']
-    
-    # solver = LinearProgrammingSolver(objective, constraints, rhs, constraint_types, var_restrictions, method="big-m", type="min")
-    # solution = solver.solve()
     
     
-    solver = LinearProgrammingSolver(objective, constraints, rhs, constraint_types, var_restrictions, method="two-phase")
+    solver = LinearProgrammingSolver(objective, constraints, rhs, constraint_types, var_restrictions, method="simplex")
     solution = solver.solve()
 
 
