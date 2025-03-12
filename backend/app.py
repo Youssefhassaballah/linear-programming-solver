@@ -335,14 +335,18 @@ class LinearProgrammingSolver:
 
 @app.route('/solve', methods=['GET','POST'])
 def solve():
-    objective = [1, 2, 1]  
-    constraints = [[1, 1, 1], [2, -5, 1]]
-    rhs = [7, 10]
-    constraint_types = ['=', '>=']
-    var_restrictions = ['>=0', '>=0', '>=0']
-    solver = LinearProgrammingSolver(objective, constraints, rhs, constraint_types, var_restrictions, method="two-phase")
+    data = request.json
+    objective = data['objective'] 
+    constraints = data['constraints']
+    rhs = data['rhs']
+    constraint_types = data['constraint_types']
+    var_restrictions = data['var_restrictions']
+    method = data['method']
+    solver = LinearProgrammingSolver(objective, constraints, rhs, constraint_types, var_restrictions, method=method)
     solution = solver.solve()
     return jsonify(solution)
+
+
 
 if __name__ == '__main__':
     app.run(debug=True)
