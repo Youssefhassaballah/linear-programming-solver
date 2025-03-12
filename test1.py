@@ -91,10 +91,10 @@ class LinearProgrammingSolver:
             "steps": self.steps
         }
 
-    # حساب النسب مع تجنب القسمة على صفر
+ 
             ratios = np.where(valid_rows, tableau[1:, -1] / column_entries, np.inf)
 
-            if np.all(ratios == np.inf):  # التحقق من وجود صف محوري صالح
+            if np.all(ratios == np.inf):  
                 return {
             "solution": None,
             "optimal_value": None,
