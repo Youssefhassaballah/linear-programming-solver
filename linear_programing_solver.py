@@ -32,8 +32,15 @@ class LinearProgrammingSolver:
 
 
     def log_step(self, tableau, headers):
-        formatted_table = self.format_tableau(tableau, headers)
+        # Create a copy of the tableau
+        modified_tableau = tableau.copy()
+        # Multiply first row by -1
+        if(self.type == "min"):
+            modified_tableau[0] = [x if np.isclose(x, 0, atol=1e-10) else -x for x in modified_tableau[0]]
+        # Format and store the modified tableau
+        formatted_table = self.format_tableau(modified_tableau, headers)
         self.steps.append(formatted_table)
+        
 
 
 
@@ -330,11 +337,11 @@ class LinearProgrammingSolver:
 def main():
 
 
-    # objective = [5, -4, 6, -8]  # min
-    # constraints = [[1, 2, 2, 4], [2, -1, 1, 2], [4, -2, 1, -1]]
-    # rhs = [40, 8, 10]
-    # constraint_types = ['<=', '<=', '<=']
-    # var_restrictions = ['>=0', '>=0', '>=0']
+    objective = [5, -4, 6, -8]  # min
+    constraints = [[1, 2, 2, 4], [2, -1, 1, 2], [4, -2, 1, -1]]
+    rhs = [40, 8, 10]
+    constraint_types = ['<=', '<=', '<=']
+    var_restrictions = ['>=0', '>=0', '>=0']
     
 
 
@@ -344,6 +351,15 @@ def main():
     # constraint_types = ['<=', '>=']
     # var_restrictions = ['>=0', '>=0']
 
+    # objective = [1, 2, 1]  
+    # constraints = [[1, 1, 1], [2, -5, 1]]
+    # rhs = [7, 10]
+    # constraint_types = ['=', '>=']
+    # var_restrictions = ['>=0', '>=0', '>=0']
+    
+    # solver = LinearProgrammingSolver(objective, constraints, rhs, constraint_types, var_restrictions, method="big-m", type="min")
+    # solution = solver.solve()
+=======
 
     objective = [1, 2, 1]  
     constraints = [[1, 1, 1], [2, -5, 1]]
@@ -359,8 +375,8 @@ def main():
     solution = solver.solve()
 
 
-    # solver = LinearProgrammingSolver(objective, constraints, rhs, constraint_types, var_restrictions, method="simplex", type="min")
-    # solution = solver.solve()
+    #solver = LinearProgrammingSolver(objective, constraints, rhs, constraint_types, var_restrictions, method="simplex", type="min")
+    #solution = solver.solve()
     
     print("Optimal Solution:", solution["solution"])
     print("Optimal Value:", solution["optimal_value"])
