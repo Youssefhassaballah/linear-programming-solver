@@ -60,6 +60,9 @@ class LinearProgrammingSolver:
 
         for i, row in enumerate(artificial_vars):
             tableau[row + 1, artificial_start + i] = 1  
+        
+        for i, row in enumerate(artificial_vars):
+            tableau[0, artificial_start + i] = self.big_m  
 
         tableau[0, :num_vars] = -self.objective
 
@@ -77,6 +80,9 @@ class LinearProgrammingSolver:
             tableau[0, :artificial_start] -= self.big_m * tableau[row + 1, :artificial_start]
             tableau[0, artificial_start + i] = 0
 
+        for i in tableau[1:,-1]:
+            tableau[0,-1] -= i*self.big_m
+        
 
         self.log_step(tableau, headers)
 
@@ -123,8 +129,10 @@ class LinearProgrammingSolver:
             if np.sum(col == 1) == 1 and np.sum(col == 0) == len(col) - 1:
                 row_index = np.where(col == 1)[0][0] + 1
                 solution[i] = tableau[row_index, -1]
-
-        return {"solution": solution, "optimal_value": tableau[0, -1], "steps": self.steps}
+        optimal_value=0
+        for i in range(num_vars):
+            optimal_value += self.objective[i]*solution[i]
+        return {"solution": solution, "optimal_value":  optimal_value, "steps": self.steps}
 
 def main():
     objective = [1, 2, 1]  
