@@ -32,12 +32,9 @@ class LinearProgrammingSolver:
 
 
     def log_step(self, tableau, headers):
-        # Create a copy of the tableau
         modified_tableau = tableau.copy()
-        # Multiply first row by -1
         if(self.type == "min"):
             modified_tableau[0] = [x if np.isclose(x, 0, atol=1e-10) else -x for x in modified_tableau[0]]
-        # Format and store the modified tableau
         formatted_table = self.format_tableau(modified_tableau, headers)
         self.steps.append(formatted_table)
         
@@ -359,7 +356,6 @@ def main():
     
     # solver = LinearProgrammingSolver(objective, constraints, rhs, constraint_types, var_restrictions, method="big-m", type="min")
     # solution = solver.solve()
-=======
 
     objective = [1, 2, 1]  
     constraints = [[1, 1, 1], [2, -5, 1]]
