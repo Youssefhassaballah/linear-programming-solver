@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import solveLinearProgramming from "./services/getSolution"; 
 
 const ObjectiveFunction = ({
   objective,
@@ -186,11 +187,68 @@ const App = () => {
     setVariables(extractVariables(objective));
   }, [objective]);
 
-  const handleSubmit = () => {
+  // const handleSubmit = () => {
+  //   try {
+  //     setLoading(true);
+  //     setError(null);
+
+  //     const objectiveCoefficients = extractCoefficients(objective, variables);
+  //     const parsedConstraints = constraints.map((constraint) => {
+  //       const coefficients = extractCoefficients(
+  //         constraint.split(/(<=|>=|=)/)[0],
+  //         variables
+  //       );
+  //       const inequality = extractInequality(constraint);
+  //       const rhs = extractRightHandSide(constraint);
+  //       return { coefficients, inequality, rhs };
+  //     });
+
+  //     const rhs = parsedConstraints.map((c) => c.rhs);
+  //     const constraintTypes = parsedConstraints.map((c) => c.inequality);
+  //     const constraintCoefficients = parsedConstraints.map(
+  //       (c) => c.coefficients
+  //     );
+  //     const varRestrictions = variables.map((variable) =>
+  //       variableTypes[variable] === "unrestricted" ? "unrestricted" : ">=0"
+  //     );
+
+  //     // Validation checks
+  //     if (
+  //       objectiveCoefficients.includes(null) ||
+  //       rhs.includes(null) ||
+  //       constraintTypes.includes(null) ||
+  //       constraintCoefficients.some((coeffs) => coeffs.includes(null)) ||
+  //       varRestrictions.includes(null)
+  //     ) {
+  //       throw new Error("One or more parameters are null.");
+  //     }
+
+  //     const DataToSend = {
+  //       objective: objectiveCoefficients,
+  //       optimization: optimizationType,
+  //       constraints: constraintCoefficients,
+  //       rhs: rhs,
+  //       constraint_types: constraintTypes,
+  //       var_restrictions: varRestrictions,
+  //       method: method,
+  //     };
+
+  //     setResult(DataToSend);
+  //   } catch (error) {
+  //     console.error("Error during submission:", error);
+  //     setError(
+  //       "An error occurred while processing your input. Please check your formulations."
+  //     );
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+  const handleSubmit = async () => {
     try {
       setLoading(true);
       setError(null);
-
+  
       const objectiveCoefficients = extractCoefficients(objective, variables);
       const parsedConstraints = constraints.map((constraint) => {
         const coefficients = extractCoefficients(
@@ -201,17 +259,14 @@ const App = () => {
         const rhs = extractRightHandSide(constraint);
         return { coefficients, inequality, rhs };
       });
-
+  
       const rhs = parsedConstraints.map((c) => c.rhs);
       const constraintTypes = parsedConstraints.map((c) => c.inequality);
-      const constraintCoefficients = parsedConstraints.map(
-        (c) => c.coefficients
-      );
+      const constraintCoefficients = parsedConstraints.map((c) => c.coefficients);
       const varRestrictions = variables.map((variable) =>
         variableTypes[variable] === "unrestricted" ? "unrestricted" : ">=0"
       );
-
-      // Validation checks
+  
       if (
         objectiveCoefficients.includes(null) ||
         rhs.includes(null) ||
@@ -221,7 +276,7 @@ const App = () => {
       ) {
         throw new Error("One or more parameters are null.");
       }
-
+  
       const DataToSend = {
         objective: objectiveCoefficients,
         optimization: optimizationType,
@@ -231,17 +286,18 @@ const App = () => {
         var_restrictions: varRestrictions,
         method: method,
       };
-
-      setResult(DataToSend);
+      console.log("get")
+      const apiResult = await solveLinearProgramming(DataToSend);
+      console.log("get")
+      setResult(apiResult);
     } catch (error) {
       console.error("Error during submission:", error);
-      setError(
-        "An error occurred while processing your input. Please check your formulations."
-      );
+      setError("An error occurred while solving the problem.");
     } finally {
       setLoading(false);
     }
   };
+  
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-blue-100 p-4 md:p-8">
