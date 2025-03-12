@@ -74,8 +74,8 @@ class LinearProgrammingSolver:
         self.log_step(tableau, headers)
 
         for i, row in enumerate(artificial_vars):
-            tableau[0, :artificial_start] += self.big_m * tableau[row + 1, :artificial_start]
-            tableau[0, artificial_start + i] = self.big_m
+            tableau[0, :artificial_start] -= self.big_m * tableau[row + 1, :artificial_start]
+            tableau[0, artificial_start + i] = 0
 
 
         self.log_step(tableau, headers)
@@ -94,7 +94,7 @@ class LinearProgrammingSolver:
             "steps": self.steps
         }
 
- 
+
             ratios = np.where(valid_rows, tableau[1:, -1] / column_entries, np.inf)
 
             if np.all(ratios == np.inf):  
