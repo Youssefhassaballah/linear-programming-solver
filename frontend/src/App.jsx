@@ -136,10 +136,12 @@ const extractCoefficients = (expression, variables) => {
   const regex = /([-+]?\d*\.?\d*)\s*([a-zA-Z]\d*)/g;
   let match;
   const coefficients = Array(variables.length).fill(0);
+
   while ((match = regex.exec(expression)) !== null) {
     let coefficient = match[1];
     const variable = match[2];
     const index = variables.indexOf(variable);
+
     if (coefficient === "" || coefficient === "+") {
       coefficient = 1;
     } else if (coefficient === "-") {
@@ -147,12 +149,15 @@ const extractCoefficients = (expression, variables) => {
     } else {
       coefficient = parseFloat(coefficient);
     }
+
     if (index !== -1) {
       coefficients[index] = coefficient;
     }
   }
   return coefficients;
 };
+
+
 
 const extractInequality = (constraint) => {
   const regex = /(<=|>=|=)/;
