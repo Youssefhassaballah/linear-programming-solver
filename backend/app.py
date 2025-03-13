@@ -1,8 +1,11 @@
 from flask import Flask, request, jsonify
+from flask_cors import CORS 
 import numpy as np
 
 
 app = Flask(__name__)
+CORS(app)
+
 
 class LinearProgrammingSolver:
     def __init__(self, objective, constraints, rhs, constraint_types, var_restrictions, method="simplex", type="max"):
@@ -108,7 +111,7 @@ class LinearProgrammingSolver:
             optimal_value = tableau[0, -1]
         
         
-        return {"solution": solution, "optimal_value": optimal_value, "steps": self.steps}
+        return {"solution": solution.tolist(), "optimal_value": optimal_value, "steps": self.steps}
 
 
 
@@ -197,7 +200,7 @@ class LinearProgrammingSolver:
 
         if self.type == "min":
             optimal_value = -optimal_value
-        return {"solution": solution, "optimal_value":  optimal_value, "steps": self.steps}
+        return {"solution": solution.tolist(), "optimal_value":  optimal_value, "steps": self.steps}
 
 
 
@@ -336,6 +339,7 @@ class LinearProgrammingSolver:
 @app.route('/solve', methods=['GET','POST'])
 def solve():
     data = request.json
+    print(request.json)
     objective = data['objective'] 
     constraints = data['constraints']
     rhs = data['rhs']

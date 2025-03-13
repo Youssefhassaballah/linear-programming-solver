@@ -114,8 +114,10 @@ const MethodSelection = ({ setMethod }) => (
       onChange={(e) => setMethod(e.target.value)}
       className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
     >
+      <option value="simplex">Simplex Method</option>
       <option value="big-m">Big M Method</option>
       <option value="two-phase">Two Phase Method</option>
+      <option value="goal-programming">Goal Programming Method</option>
     </select>
   </div>
 );
@@ -177,7 +179,7 @@ const App = () => {
   const [optimizationType, setOptimizationType] = useState("max");
   const [constraints, setConstraints] = useState([""]);
   const [variableTypes, setVariableTypes] = useState({});
-  const [method, setMethod] = useState("bigM");
+  const [method, setMethod] = useState("big-m");
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -187,62 +189,7 @@ const App = () => {
     setVariables(extractVariables(objective));
   }, [objective]);
 
-  // const handleSubmit = () => {
-  //   try {
-  //     setLoading(true);
-  //     setError(null);
 
-  //     const objectiveCoefficients = extractCoefficients(objective, variables);
-  //     const parsedConstraints = constraints.map((constraint) => {
-  //       const coefficients = extractCoefficients(
-  //         constraint.split(/(<=|>=|=)/)[0],
-  //         variables
-  //       );
-  //       const inequality = extractInequality(constraint);
-  //       const rhs = extractRightHandSide(constraint);
-  //       return { coefficients, inequality, rhs };
-  //     });
-
-  //     const rhs = parsedConstraints.map((c) => c.rhs);
-  //     const constraintTypes = parsedConstraints.map((c) => c.inequality);
-  //     const constraintCoefficients = parsedConstraints.map(
-  //       (c) => c.coefficients
-  //     );
-  //     const varRestrictions = variables.map((variable) =>
-  //       variableTypes[variable] === "unrestricted" ? "unrestricted" : ">=0"
-  //     );
-
-  //     // Validation checks
-  //     if (
-  //       objectiveCoefficients.includes(null) ||
-  //       rhs.includes(null) ||
-  //       constraintTypes.includes(null) ||
-  //       constraintCoefficients.some((coeffs) => coeffs.includes(null)) ||
-  //       varRestrictions.includes(null)
-  //     ) {
-  //       throw new Error("One or more parameters are null.");
-  //     }
-
-  //     const DataToSend = {
-  //       objective: objectiveCoefficients,
-  //       optimization: optimizationType,
-  //       constraints: constraintCoefficients,
-  //       rhs: rhs,
-  //       constraint_types: constraintTypes,
-  //       var_restrictions: varRestrictions,
-  //       method: method,
-  //     };
-
-  //     setResult(DataToSend);
-  //   } catch (error) {
-  //     console.error("Error during submission:", error);
-  //     setError(
-  //       "An error occurred while processing your input. Please check your formulations."
-  //     );
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
 
   const handleSubmit = async () => {
     try {
@@ -286,11 +233,12 @@ const App = () => {
         var_restrictions: varRestrictions,
         method: method,
       };
-      console.log("get")
+      console.log(DataToSend)
       const apiResult = await solveLinearProgramming(DataToSend);
       console.log("get")
       setResult(apiResult);
     } catch (error) {
+
       console.error("Error during submission:", error);
       setError("An error occurred while solving the problem.");
     } finally {
