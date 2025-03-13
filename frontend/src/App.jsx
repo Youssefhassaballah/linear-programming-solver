@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import solveLinearProgramming from "./services/getSolution"; 
+import StepsTable from "./solutions";
 
 const ObjectiveFunction = ({
   objective,
@@ -289,7 +290,8 @@ const App = () => {
           {loading ? "Processing..." : "Solve"}
         </button>
 
-        {result && <Result result={result} />}
+        {/* {result && <Result result={result} />} */}
+        {result && <StepsTable data={result} />}
       </div>
     </div>
   );
