@@ -115,10 +115,8 @@ const MethodSelection = ({ setMethod }) => (
       onChange={(e) => setMethod(e.target.value)}
       className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
     >
-      <option value="simplex">Simplex Method</option>
       <option value="big-m">Big M Method</option>
       <option value="two-phase">Two Phase Method</option>
-      <option value="goal-programming">Goal Programming Method</option>
     </select>
   </div>
 );
@@ -250,9 +248,9 @@ const LinearProgrammingPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-blue-100 p-4 md:p-8">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-blue-100">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-4xl font-bold text-center text-indigo-800 mb-8">
+        <h1 className="text-4xl font-bold text-center text-indigo-800 mb-4">
           Linear Programming Calculator
         </h1>
 
@@ -291,7 +289,7 @@ const LinearProgrammingPage = () => {
           {loading ? "Processing..." : "Solve"}
         </button>
 
-        {/* {result && <Result result={result} />} */}
+        {result && <Result result={result} />}
         {result && <StepsTable data={result} />}
       </div>
     </div>

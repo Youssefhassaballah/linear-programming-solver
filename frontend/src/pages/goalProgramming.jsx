@@ -106,22 +106,56 @@ const Constraints = ({
   );
 };
 
-const MethodSelection = ({ setMethod }) => (
-  <div className="bg-white shadow-lg rounded-lg p-6 mb-6 transition-all hover:shadow-xl">
-    <h2 className="text-2xl font-bold text-indigo-700 mb-4">
-      Method Selection
-    </h2>
-    <select
-      onChange={(e) => setMethod(e.target.value)}
-      className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
-    >
-      <option value="simplex">Simplex Method</option>
-      <option value="big-m">Big M Method</option>
-      <option value="two-phase">Two Phase Method</option>
-      <option value="goal-programming">Goal Programming Method</option>
-    </select>
-  </div>
-);
+const PriritiesSelection = ({ constraints, priorities, setPriorities }) => {
+  useEffect(() => {
+    setPriorities(
+      Array.from({ length: constraints.length }, (_, i) => (i + 1).toString())
+    );
+  }, [constraints.length, setPriorities]);
+
+  const handlePriorityChange = (index, value) => {
+    const newPriorities = [...priorities];
+    newPriorities[index] = value;
+    setPriorities(newPriorities);
+    console.log(priorities);
+  };
+
+  const handleKeyDown = (e) => {
+    const { key } = e;
+    const isNumber = /^[1-9]$/.test(key);
+    const isWithinRange = parseInt(key) <= constraints.length;
+    const isBackspace = key === "Backspace";
+
+    if ((!isNumber && !isBackspace) || (isNumber && !isWithinRange)) {
+      e.preventDefault();
+    }
+  };
+
+  return (
+    <div className="bg-white shadow-lg rounded-lg p-6 mb-6 transition-all hover:shadow-xl">
+      <h2 className="text-2xl font-bold text-indigo-700 mb-4">
+        Priorities Selection
+      </h2>
+      <div className="text-md font-bold text-indigo-800 mb-2">
+        Enter the order of constraints:
+      </div>
+      <div className="flex items-center space-x-2">
+        {constraints.map((constraint, index) => (
+          <React.Fragment key={index}>
+            <input
+              type="text"
+              value={priorities[index]}
+              onChange={(e) => handlePriorityChange(index, e.target.value)}
+              onKeyDown={handleKeyDown}
+              className="border rounded p-2 w-12 text-center"
+            />
+            {index < constraints.length - 1 && <span>{">"}</span>}
+          </React.Fragment>
+        ))}
+      </div>
+    </div>
+  );
+};
 
 const Result = ({ result }) => (
   <div className="bg-white shadow-lg rounded-lg p-6 mb-6 transition-all hover:shadow-xl">
@@ -183,11 +217,11 @@ const GoalProgrammingPage = () => {
   const [optimizationType, setOptimizationType] = useState("max");
   const [constraints, setConstraints] = useState([""]);
   const [variableTypes, setVariableTypes] = useState({});
-  const [method, setMethod] = useState("big-m");
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [variables, setVariables] = useState([]);
+  const [priorities, setPriorities] = useState([]);
 
   useEffect(() => {
     setVariables(extractVariables(objective));
@@ -235,7 +269,7 @@ const GoalProgrammingPage = () => {
         rhs: rhs,
         constraint_types: constraintTypes,
         var_restrictions: varRestrictions,
-        method: method,
+        priorities: priorities,
       };
       console.log(DataToSend);
       const apiResult = await solveLinearProgramming(DataToSend);
@@ -250,9 +284,9 @@ const GoalProgrammingPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-blue-100 p-4 md:p-8">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-blue-100">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-4xl font-bold text-center text-indigo-800 mb-8">
+        <h1 className="text-4xl font-bold text-center text-indigo-800 mb-4">
           Goal Programming Calculator
         </h1>
 
@@ -270,7 +304,11 @@ const GoalProgrammingPage = () => {
           variables={variables}
         />
 
-        <MethodSelection setMethod={setMethod} />
+        <PriritiesSelection
+          constraints={constraints}
+          priorities={priorities}
+          setPriorities={setPriorities}
+        />
 
         {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-6">
@@ -291,7 +329,7 @@ const GoalProgrammingPage = () => {
           {loading ? "Processing..." : "Solve"}
         </button>
 
-        {/* {result && <Result result={result} />} */}
+        {result && <Result result={result} />}
         {result && <StepsTable data={result} />}
       </div>
     </div>
