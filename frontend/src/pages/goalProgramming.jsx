@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import solveLinearProgramming from "../services/getSolution";
-import StepsTable from "../solutions";
+import Solution from "../components/Solution";
+import Steps from "../components/Steps";
 
 const ObjectiveFunction = ({
   objective,
@@ -156,15 +157,6 @@ const PriritiesSelection = ({ constraints, priorities, setPriorities }) => {
     </div>
   );
 };
-
-const Result = ({ result }) => (
-  <div className="bg-white shadow-lg rounded-lg p-6 mb-6 transition-all hover:shadow-xl">
-    <h2 className="text-2xl font-bold text-indigo-700 mb-4">Result</h2>
-    <pre className="bg-gray-100 p-4 rounded-md overflow-auto">
-      {JSON.stringify(result, null, 2)}
-    </pre>
-  </div>
-);
 
 const extractCoefficients = (expression, variables) => {
   const regex = /([-+]?\d*\.?\d*)\s*([a-zA-Z]\d*)/g;
@@ -329,8 +321,8 @@ const GoalProgrammingPage = () => {
           {loading ? "Processing..." : "Solve"}
         </button>
 
-        {result && <Result result={result} />}
-        {result && <StepsTable data={result} />}
+        {result && <Solution data={result} />}
+        {result && <Steps data={result} />}
       </div>
     </div>
   );
