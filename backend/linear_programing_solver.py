@@ -104,7 +104,7 @@ class LinearProgrammingSolver:
             optimal_value = tableau[0, -1]
         
         
-        return {"solution": solution, "optimal_value": optimal_value, "steps": self.steps}
+        return {"solution": solution.tolist(), "optimal_value": optimal_value, "steps": self.steps}
 
 
 
@@ -193,7 +193,7 @@ class LinearProgrammingSolver:
 
         if self.type == "min":
             optimal_value = -optimal_value
-        return {"solution": solution, "optimal_value":  optimal_value, "steps": self.steps}
+        return {"solution": solution.tolist(), "optimal_value":  optimal_value, "steps": self.steps}
 
 
 
@@ -320,7 +320,7 @@ class LinearProgrammingSolver:
                 row_index = np.where(col == 1)[0][0] + 1
                 solution[i] = tableau[row_index, -1]
         optimal_value = tableau[0, -1] 
-        return {"solution": solution, "optimal_value": optimal_value, "steps": self.steps}
+        return {"solution": solution.tolist(), "optimal_value": optimal_value, "steps": self.steps}
 
 
     def simplex_method_with_unrestricted_variables(self):
@@ -424,12 +424,14 @@ class LinearProgrammingSolver:
         else:
             optimal_value = tableau[0, -1]
         
-        return {"solution": solution, "optimal_value": optimal_value, "steps": self.steps}
+        return {"solution": solution.tolist(), "optimal_value": optimal_value, "steps": self.steps}
 
 
 
     def goal_programming(self):
         return "Goal Programming solution coming soon"
+
+
 
 
 def main():
