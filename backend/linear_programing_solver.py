@@ -15,6 +15,10 @@ class LinearProgrammingSolver:
 
         if self.type == "min":
             self.objective = -self.objective
+
+        # self.original_var_count = len(objective)
+        # self.unrestricted_vars = []
+        # self.process_unrestricted_vars(objective, constraints, var_restrictions)
         
 
     def solve(self):
@@ -28,6 +32,30 @@ class LinearProgrammingSolver:
             return self.goal_programming()
         else:
             raise ValueError("Invalid method selected")
+
+
+
+    # def process_unrestricted_vars(self, objective, constraints, var_restrictions):
+    #         self.transformed_objective = []
+    #         self.transformed_constraints = []
+            
+    #         for i, res in enumerate(var_restrictions):
+    #             if res == "unrestricted":
+    #                 self.unrestricted_vars.append(i)
+    #                 self.transformed_objective.extend([objective[i], -objective[i]])
+    #             else:
+    #                 self.transformed_objective.append(objective[i])
+            
+    #         for row in constraints:
+    #             new_row = []
+    #             for i, val in enumerate(row):
+    #                 if i in self.unrestricted_vars:
+    #                     new_row.extend([val, -val])
+    #                 else:
+    #                     new_row.append(val)
+    #             self.transformed_constraints.append(new_row)
+
+
 
 
 
@@ -323,6 +351,125 @@ class LinearProgrammingSolver:
         return {"solution": solution, "optimal_value": optimal_value, "steps": self.steps}
 
 
+    def simplex_method_with_unrestricted_variables(self):
+        num_vars = len(self.objective)
+        num_constraints = len(self.constraints)
+        
+        # Identify unrestricted variables
+        unrestricted_vars = [i for i, res in enumerate(self.var_restrictions) if res == "unrestricted"]
+        
+        # Transform the objective function and constraints
+        transformed_objective = []
+        transformed_constraints = []
+        
+        # Create a mapping from original variable indices to transformed variable indices
+        var_mapping = {}
+        transformed_var_count = 0
+        
+        for i, val in enumerate(self.objective):
+            if i in unrestricted_vars:
+                # For unrestricted variables, split into x_n^+ and x_n^-
+                transformed_objective.extend([val, -val])
+                var_mapping[i] = (transformed_var_count, transformed_var_count + 1)
+                transformed_var_count += 2
+            else:
+                # For restricted variables, keep as is
+                transformed_objective.append(val)
+                var_mapping[i] = (transformed_var_count,)
+                transformed_var_count += 1
+        
+        for row in self.constraints:
+            new_row = []
+            for i, val in enumerate(row):
+                if i in unrestricted_vars:
+                    # For unrestricted variables, split into x_n^+ and x_n^-
+                    new_row.extend([val, -val])
+                else:
+                    # For restricted variables, keep as is
+                    new_row.append(val)
+            transformed_constraints.append(new_row)
+        
+        # Update the number of variables
+        num_transformed_vars = len(transformed_objective)
+        
+        # Create the initial tableau
+        tableau = np.zeros((num_constraints + 1, num_transformed_vars + num_constraints + 1))
+        
+        tableau[1:, :num_transformed_vars] = transformed_constraints
+        tableau[1:, num_transformed_vars:num_transformed_vars+num_constraints] = np.eye(num_constraints)
+        tableau[1:, -1] = self.rhs
+        tableau[0, :num_transformed_vars] = -np.array(transformed_objective)
+        
+        # Create headers for the tableau
+        headers = []
+        for i in range(num_vars):
+            if i in unrestricted_vars:
+                headers.append(f"x{i+1}_+")
+                headers.append(f"x{i+1}_-")
+            else:
+                headers.append(f"x{i+1}")
+        headers.extend([f"s{i+1}" for i in range(num_constraints)])
+        headers.append("RHS")
+        
+        self.log_step(tableau, headers)
+        
+        # Perform the simplex method
+        while np.any(tableau[0, :-1] < 0):
+            pivot_col = np.argmin(tableau[0, :-1])
+            ratios = tableau[1:, -1] / tableau[1:, pivot_col]
+            valid_ratios = [ratios[i] if tableau[i + 1, pivot_col] > 0 else np.inf for i in range(len(ratios))]
+            pivot_row = np.argmin(valid_ratios) + 1
+            
+            if tableau[pivot_row, pivot_col] <= 0:
+                return {
+                    "solution": None,
+                    "optimal_value": None,
+                    "error": "Unbounded solution",
+                    "steps": self.steps
+                }
+            
+            tableau[pivot_row, :] /= tableau[pivot_row, pivot_col]
+            
+            for i in range(len(tableau)):
+                if i != pivot_row:
+                    tableau[i, :] -= tableau[i, pivot_col] * tableau[pivot_row, :]
+            
+            self.basic_vars[pivot_row - 1] = headers[pivot_col]
+            
+            self.log_step(tableau, headers)
+        
+        # Recover the solution for original variables
+        solution = np.zeros(num_vars)
+        for i in range(num_vars):
+            if i in unrestricted_vars:
+                # For unrestricted variables, x_n = x_n^+ - x_n^-
+                x_plus_index, x_minus_index = var_mapping[i]
+                x_plus_value = tableau[1:, x_plus_index] @ tableau[1:, -1]
+                x_minus_value = tableau[1:, x_minus_index] @ tableau[1:, -1]
+                
+                # If x_n^+ has a non-zero value, x_n = x_n^+
+                if x_plus_value > 0:
+                    solution[i] = x_plus_value
+                # If x_n^- has a non-zero value, x_n = -(x_n^-)
+                elif x_minus_value > 0:
+                    solution[i] = -x_minus_value
+                # If both are zero, x_n = 0
+                else:
+                    solution[i] = 0
+            else:
+                # For restricted variables, use the value directly
+                col = tableau[1:, var_mapping[i][0]]
+                if np.sum(col == 1) == 1 and np.sum(col == 0) == len(col) - 1:
+                    row_index = np.where(col == 1)[0][0] + 1
+                    solution[i] = tableau[row_index, -1]
+        
+        if self.type == "min":
+            optimal_value = -tableau[0, -1]
+        else:
+            optimal_value = tableau[0, -1]
+        
+        return {"solution": solution, "optimal_value": optimal_value, "steps": self.steps}
+
 
 
     def goal_programming(self):
@@ -332,11 +479,17 @@ class LinearProgrammingSolver:
 def main():
 
 
-    objective = [5, -4, 6, -8]  # min
-    constraints = [[1, 2, 2, 4], [2, -1, 1, 2], [4, -2, 1, -1]]
-    rhs = [40, 8, 10]
-    constraint_types = ['<=', '<=', '<=']
-    var_restrictions = ['>=','>=0', '>=0', '>=0']
+    objective = [30 , -4]
+    constraints = [[5, -1], [1, 0]]
+    rhs = [30, 5]
+    constraint_types = ['<=', '<=']
+    var_restrictions = ['>=0','unrestricted']
+
+    # objective = [5, -4, 6, -8]  # min
+    # constraints = [[1, 2, 2, 4], [2, -1, 1, 2], [4, -2, 1, -1]]
+    # rhs = [40, 8, 10]
+    # constraint_types = ['<=', '<=', '<=']
+    # var_restrictions = ['>=','>=0', '>=0', '>=0']
     
 
 
@@ -358,7 +511,7 @@ def main():
     
     
     solver = LinearProgrammingSolver(objective, constraints, rhs, constraint_types, var_restrictions, method="simplex")
-    solution = solver.solve()
+    solution = solver.simplex_method_with_unrestricted_variables()
 
 
     #solver = LinearProgrammingSolver(objective, constraints, rhs, constraint_types, var_restrictions, method="simplex", type="min")
