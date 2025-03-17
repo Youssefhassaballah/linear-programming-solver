@@ -327,25 +327,21 @@ class LinearProgrammingSolver:
         num_vars = len(self.objective)
         num_constraints = len(self.constraints)
         
-        # Identify unrestricted variables
         unrestricted_vars = [i for i, res in enumerate(self.var_restrictions) if res == "unrestricted"]
         
-        # Transform the objective function and constraints
         transformed_objective = []
         transformed_constraints = []
-        
-        # Create a mapping from original variable indices to transformed variable indices
         var_mapping = {}
         transformed_var_count = 0
         
         for i, val in enumerate(self.objective):
             if i in unrestricted_vars:
-                # For unrestricted variables, split into x_n^+ and x_n^-
+                
                 transformed_objective.extend([val, -val])
                 var_mapping[i] = (transformed_var_count, transformed_var_count + 1)
                 transformed_var_count += 2
             else:
-                # For restricted variables, keep as is
+                
                 transformed_objective.append(val)
                 var_mapping[i] = (transformed_var_count,)
                 transformed_var_count += 1
@@ -354,17 +350,13 @@ class LinearProgrammingSolver:
             new_row = []
             for i, val in enumerate(row):
                 if i in unrestricted_vars:
-                    # For unrestricted variables, split into x_n^+ and x_n^-
                     new_row.extend([val, -val])
                 else:
-                    # For restricted variables, keep as is
                     new_row.append(val)
             transformed_constraints.append(new_row)
         
-        # Update the number of variables
         num_transformed_vars = len(transformed_objective)
         
-        # Create the initial tableau
         tableau = np.zeros((num_constraints + 1, num_transformed_vars + num_constraints + 1))
         
         tableau[1:, :num_transformed_vars] = transformed_constraints
@@ -372,7 +364,6 @@ class LinearProgrammingSolver:
         tableau[1:, -1] = self.rhs
         tableau[0, :num_transformed_vars] = -np.array(transformed_objective)
         
-        # Create headers for the tableau
         headers = []
         for i in range(num_vars):
             if i in unrestricted_vars:
@@ -385,7 +376,6 @@ class LinearProgrammingSolver:
         
         self.log_step(tableau, headers)
         
-        # Perform the simplex method
         while np.any(tableau[0, :-1] < 0):
             pivot_col = np.argmin(tableau[0, :-1])
             ratios = tableau[1:, -1] / tableau[1:, pivot_col]
@@ -410,26 +400,20 @@ class LinearProgrammingSolver:
             
             self.log_step(tableau, headers)
         
-        # Recover the solution for original variables
         solution = np.zeros(num_vars)
         for i in range(num_vars):
             if i in unrestricted_vars:
-                # For unrestricted variables, x_n = x_n^+ - x_n^-
                 x_plus_index, x_minus_index = var_mapping[i]
                 x_plus_value = tableau[1:, x_plus_index] @ tableau[1:, -1]
                 x_minus_value = tableau[1:, x_minus_index] @ tableau[1:, -1]
                 
-                # If x_n^+ has a non-zero value, x_n = x_n^+
                 if x_plus_value > 0:
                     solution[i] = x_plus_value
-                # If x_n^- has a non-zero value, x_n = -(x_n^-)
                 elif x_minus_value > 0:
                     solution[i] = -x_minus_value
-                # If both are zero, x_n = 0
                 else:
                     solution[i] = 0
             else:
-                # For restricted variables, use the value directly
                 col = tableau[1:, var_mapping[i][0]]
                 if np.sum(col == 1) == 1 and np.sum(col == 0) == len(col) - 1:
                     row_index = np.where(col == 1)[0][0] + 1
