@@ -35,30 +35,6 @@ class LinearProgrammingSolver:
 
 
 
-    # def process_unrestricted_vars(self, objective, constraints, var_restrictions):
-    #         self.transformed_objective = []
-    #         self.transformed_constraints = []
-            
-    #         for i, res in enumerate(var_restrictions):
-    #             if res == "unrestricted":
-    #                 self.unrestricted_vars.append(i)
-    #                 self.transformed_objective.extend([objective[i], -objective[i]])
-    #             else:
-    #                 self.transformed_objective.append(objective[i])
-            
-    #         for row in constraints:
-    #             new_row = []
-    #             for i, val in enumerate(row):
-    #                 if i in self.unrestricted_vars:
-    #                     new_row.extend([val, -val])
-    #                 else:
-    #                     new_row.append(val)
-    #             self.transformed_constraints.append(new_row)
-
-
-
-
-
     def log_step(self, tableau, headers):
         modified_tableau = tableau.copy()
         if(self.type == "min"):
