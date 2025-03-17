@@ -16,10 +16,6 @@ class LinearProgrammingSolver:
         if self.type == "min":
             self.objective = -self.objective
 
-        # self.original_var_count = len(objective)
-        # self.unrestricted_vars = []
-        # self.process_unrestricted_vars(objective, constraints, var_restrictions)
-        
 
     def solve(self):
         if self.method == "simplex":
