@@ -8,6 +8,7 @@ class GoalProgramming:
         self.constraint_types = constraint_types
         self.var_restrictions = var_restrictions
         self.steps = []
+        self.solution = []
         self.num_vars = len(constraints[0])
         self.num_goals = len(self.goals)
         self.num_constraints = len(constraints)
@@ -56,10 +57,10 @@ class GoalProgramming:
             self.steps.append(self.format_tableau())
             
             if all(header in self.row_headers for header in self.headers[:self.num_vars]):
-                self.print_optimal_solution()
+                self.extract_solution()
                 return
         
-        self.print_optimal_solution()
+        self.extract_solution()
     
     def simplex_method(self, goal_index):
         max_iterations = 1000  
@@ -93,16 +94,20 @@ class GoalProgramming:
         
         return self.tableau, self.row_headers, False
     
+    def extract_solution(self):
+        self.solution = [0.0] * self.num_vars
+        for i in range(self.num_vars):
+            var_name = f"x{i+1}"
+            if var_name in self.row_headers:
+                self.solution[i] = float(self.tableau[self.row_headers.index(var_name), -1])
+    
     def format_tableau(self):
         table_str = "Basic\t" + "\t".join(self.headers) + "\n"
         for i, row_name in enumerate(self.row_headers):
             table_str += f"{row_name}\t" + "\t".join(map(lambda x: f"{x:.2f}", self.tableau[i])) + "\n"
         return table_str
     
-    def print_optimal_solution(self):
-        print("\nOptimal Solution:")
-        for step in self.steps:
-            print(step)
+
 
 def main():
     goals = [([200, 0], 1000, 1), ([100, 400], 1200, 2), ([0, 250], 800, 1)]
@@ -112,7 +117,9 @@ def main():
     var_restrictions = ['>=0', '>=0']
     gp = GoalProgramming(goals, constraints, rhs, constraint_types, var_restrictions)
     gp.solve()
+    print(gp.solution)
     for step in gp.steps:
         print (step)
+
 
 main()
