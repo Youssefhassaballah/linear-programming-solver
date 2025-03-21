@@ -41,82 +41,87 @@ def goal_programming(goals, constraints, rhs, constraint_types, var_restrictions
         deviation_vars_minus +
         ["RHS"]
     )
+    row_headers = (
+        [f"Z{i+1}" for i in range(num_goals)] +
+        [f"d{i+1}_-" for i in range(num_goals)] +
+        slack_vars
+    )
     
     print("Initial Tableau:")
-    print_tableau(tableau, headers, num_goals, num_constraints)
+    print_tableau(tableau, headers, row_headers)
     
     for i in range(num_goals):
         print(f"\nSolving for Goal {i+1} (Priority {goals[i][2]}):")
-        new_tableau = simplex_method(tableau, headers, i)
+        new_tableau, new_row_headers = simplex_method(tableau, headers, row_headers, num_goals)
         if new_tableau is None:
             print("Stopping as further optimization would ruin higher priority goals.")
             break
         tableau = new_tableau
-        print_tableau(tableau, headers, num_goals, num_constraints)
+        row_headers = new_row_headers
+        print_tableau(tableau, headers, row_headers)
     
     print("\nFinal Optimized Tableau:")
-    print_tableau(tableau, headers, num_goals, num_constraints)
-    print_optimal_solution(tableau, headers, num_vars)
+    print_tableau(tableau, headers, row_headers)
+    print_optimal_solution(tableau, headers, row_headers, num_vars)
 
-def simplex_method(tableau, headers, goal_index):
-    max_iterations = 20
+def simplex_method(tableau, headers, row_headers, num_goals):
+    max_iterations = 20  
     iterations = 0
     while iterations < max_iterations:
-        pivot_col = np.argmax(tableau[goal_index, :-1])
-        if tableau[goal_index, pivot_col] <= 0:
+        pivot_col = np.argmax(tableau[:, :-1].max(axis=0))
+        if tableau[:, pivot_col].max() <= 0:
             break
         
-        if np.all(tableau[:, pivot_col] <= 0):
+        valid_rows = [i for i in range(len(tableau)) if tableau[i, pivot_col] > 0 and not row_headers[i].startswith("Z")]
+        if len(valid_rows) == 0:
             print("No valid pivot found. Stopping.")
-            return None
+            return None, row_headers
         
-        ratios = np.where(tableau[:, pivot_col] > 0, tableau[:, -1] / tableau[:, pivot_col], np.inf)
-        pivot_row = np.argmin(ratios)
+        ratios = tableau[valid_rows, -1] / tableau[valid_rows, pivot_col]
+        pivot_row = valid_rows[np.argmin(ratios)]
         
-        if np.isinf(ratios[pivot_row]):
+        if np.isinf(ratios[np.argmin(ratios)]):
             print("Unbounded solution detected. Stopping.")
-            return None
+            return None, row_headers
         
         pivot_element = tableau[pivot_row, pivot_col]
         if pivot_element == 0:
             print("Pivot element is zero. Stopping.")
-            return None
+            return None, row_headers
         
-        print(f"Pivot Column: {headers[pivot_col]}, Pivot Row: {pivot_row + 1}")
+        print(f"Pivot Column: {headers[pivot_col]}, Pivot Row: {row_headers[pivot_row]}")
         tableau[pivot_row, :] /= pivot_element
         for i in range(len(tableau)):
             if i != pivot_row:
                 tableau[i, :] -= tableau[i, pivot_col] * tableau[pivot_row, :]
         
-        headers[pivot_col] = headers[pivot_row + len(headers) - len(tableau) - 1]
+        row_headers[pivot_row] = headers[pivot_col]
         
         print("Updated Tableau after Pivot Exchange:")
-        print_tableau(tableau, headers, len(headers) - 1 - len(tableau), len(tableau) - len(headers) + 1)
+        print_tableau(tableau, headers, row_headers)
         
         iterations += 1
     
     if iterations >= max_iterations:
         print("Maximum iterations reached. Stopping to prevent infinite loop.")
-        return None
+        return None, row_headers
     
-    return tableau
+    return tableau, row_headers
 
-def print_tableau(tableau, headers, num_goals, num_constraints):
+def print_tableau(tableau, headers, row_headers):
     table_str = "Basic\t" + "\t".join(headers) + "\n"
-    for i in range(num_goals):
-        table_str += f"Z{i+1}\t" + "\t".join(map(lambda x: f"{x:.2f}", tableau[i])) + "\n"
-    for i in range(num_goals):
-        table_str += f"d{i+1}_-\t" + "\t".join(map(lambda x: f"{x:.2f}", tableau[num_goals + i])) + "\n"
-    for i in range(num_constraints):
-        row = 2 * num_goals + i
-        if row < len(tableau):
-            table_str += f"s{i+1}\t" + "\t".join(map(lambda x: f"{x:.2f}", tableau[row])) + "\n"
+    for i, row_name in enumerate(row_headers):
+        table_str += f"{row_name}\t" + "\t".join(map(lambda x: f"{x:.2f}", tableau[i])) + "\n"
     print(table_str)
 
-def print_optimal_solution(tableau, headers, num_vars):
+def print_optimal_solution(tableau, headers, row_headers, num_vars):
     print("\nOptimal Solution:")
-    for i in range(num_vars):
-        print(f"{headers[i]} = {tableau[-1, i]:.2f}")
+    solution = {var: 0.0 for var in headers[:num_vars]}
+    for i, row_name in enumerate(row_headers):
+        if row_name in solution:
+            solution[row_name] = tableau[i, -1]
+    for var in headers[:num_vars]:
+        print(f"{var} = {solution[var]:.2f}")
 
 def main():
     goals = [
