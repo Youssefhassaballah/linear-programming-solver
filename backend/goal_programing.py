@@ -1,125 +1,193 @@
 import numpy as np
+from tabulate import tabulate
 
-class GoalProgramming:
-    def __init__(self, goals, constraints, rhs, constraint_types, var_restrictions):
-        self.goals = sorted(goals, key=lambda x: x[2], reverse=True)
-        self.constraints = np.array(constraints, dtype=float)
-        self.rhs = np.array(rhs, dtype=float)
+class GoalSolver:
+    def __init__(self, c, A, b, goals, priority, constraint_types, variable_restrictions, problem_type='min'):
+        self.c = np.array(c, dtype=float)
+        self.A = np.array(A, dtype=float)
+        self.b = np.array(b, dtype=float)
+        self.goals = np.array(goals, dtype=float)
+        self.priority = np.array(priority, dtype=float)
         self.constraint_types = constraint_types
-        self.var_restrictions = var_restrictions
+        self.variable_restrictions = variable_restrictions
+        self.problem_type = problem_type
+        self.num_vars = len(c)
+        self.num_constraints = len(b)
+        self.num_goals = len(goals)
+        self.tableau = None
+        self.basis = None
+        self.optimal_solution = None
+        self.optimal_value = None
+        self.status = None
+        self.headers = None
+        self.tableau_rows = None
         self.steps = []
-        self.solution = []
-        self.num_vars = len(constraints[0])
-        self.num_goals = len(self.goals)
-        self.num_constraints = len(constraints)
-        self.slack_vars = [f"s{i+1}" for i in range(self.num_constraints)]
-        self.deviation_vars_plus = [f"d{i+1}_+" for i in range(self.num_goals)]
-        self.deviation_vars_minus = [f"d{i+1}_-" for i in range(self.num_goals)]
-        self.total_vars = self.num_vars + self.num_constraints + 2 * self.num_goals
-        self.tableau = np.zeros((self.num_goals + self.num_goals + self.num_constraints, self.total_vars + 1))
-        self.headers = ([f"x{i+1}" for i in range(self.num_vars)] + self.slack_vars +
-                        self.deviation_vars_plus + self.deviation_vars_minus + ["RHS"])
-        self.row_headers = ([f"Z{i+1}" for i in range(self.num_goals)] +
-                            [f"d{i+1}_-" for i in range(self.num_goals)] + self.slack_vars)
-        self._initialize_tableau()
-    
-    def _initialize_tableau(self):
-        for i, goal in enumerate(self.goals):
-            coeffs, target, priority = goal
-            self.tableau[i, :self.num_vars] = np.array(coeffs) * priority
-            self.tableau[i, self.num_vars + self.num_constraints + i] = -priority
-            self.tableau[i, self.num_vars + self.num_constraints + self.num_goals + i] = 0
-            self.tableau[i, -1] = target
-        
-        for i, goal in enumerate(self.goals):
-            coeffs, target, priority = goal
-            row = self.num_goals + i
-            self.tableau[row, :self.num_vars] = coeffs
-            self.tableau[row, self.num_vars + self.num_constraints + i] = 0
-            self.tableau[row, self.num_vars + self.num_constraints + self.num_goals + i] = 1
-            self.tableau[row, -1] = target
-        
+
+    def initialize_tableau(self):
+        num_slack =0
+        num_deviation =0
         for i in range(self.num_constraints):
-            row = 2 * self.num_goals + i
-            self.tableau[row, :self.num_vars] = self.constraints[i]
-            self.tableau[row, self.num_vars + i] = 1
-            self.tableau[row, -1] = self.rhs[i]
-        
-        self.steps.append(self.format_tableau())
+         if self.constraint_types[i] == '<=' :
+            num_slack += 1
+         elif self.constraint_types[i] == '>=' :
+            num_deviation +=1
+
+        total_vars = self.num_vars + 2*num_deviation + num_slack
+        self.tableau = np.zeros((self.num_constraints + self.num_goals , total_vars + 1)) 
+
+        slack_index = self.num_vars 
+        deviation_index = self.num_vars + num_slack
+
+        for i in range(self.num_constraints):
+            if self.constraint_types[i] == '<=':
+                self.tableau[i, :self.num_vars] = self.A[i]  
+                self.tableau[i, slack_index] = 1  # Slack variable
+                slack_index += 1
+            elif self.constraint_types[i] == '>=':
+                self.tableau[i, :self.num_vars] = self.A[i]  
+                self.tableau[i, deviation_index] = 1  # d-
+                self.tableau[i, deviation_index + self.num_goals] = -1  # d+
+                deviation_index += 1
+
+            self.tableau[i, -1] = self.b[i]    
+
+        for i in range(self.num_goals): 
+            goal_row = self.num_constraints + i
+            self.tableau[goal_row, self.num_vars + num_slack + i ] =-self.priority[i]
+
+        self.basis = list(range(self.num_vars, total_vars))  
+
+    def format_tableau_as_string(self):
+        formatted_string = "\t".join(self.headers) + "\n"
+        for row in self.tableau_rows:
+            formatted_string += "\t".join(map(str, row)) + "\n"
+        return formatted_string
     
-    def solve(self):
+    def display_tableau(self):
+        self.headers = ['Basic'] + [f'x{i + 1}' for i in range(self.num_vars)]
+
+        slack_count = sum(1 for t in self.constraint_types if t == '<=')
+        deviation_count = sum(2 if t in ('>=') else 0 for t in self.constraint_types)
+
+        self.headers += [f's{i + 1}' for i in range(slack_count)]
+        for i in range (deviation_count//2):
+           self.headers += [f'd-{i + 1}']
+        for i in range (deviation_count//2):
+           self.headers += [f'd+{i + 1}']   
+        self.headers.append('RHS')
+
+        self.tableau_rows = []
+        for i in range(self.num_constraints):
+            if self.basis[i] < self.num_vars:
+                basic_var = f'x{self.basis[i] + 1}'  # Decision variable
+            elif self.basis[i] < self.num_vars + slack_count:
+                basic_var = f's{self.basis[i] - self.num_vars + 1}'  # Slack variable
+            else:
+                deviation_index = self.basis[i] - self.num_vars - slack_count
+                if deviation_index < self.num_goals:  # First two deviation variables are d1- and d2-
+                    basic_var = f'd{deviation_index + 1}-'  # d1-, d2-
+                else:
+                    if deviation_index % 2 == 0:
+                        basic_var = f'd{(deviation_index // 2) + 1}+'  # Positive deviation
+                    else:
+                        basic_var = f'd{(deviation_index // 2) + 1}-'
+                    
+
+        # Add the row to the tableau
+            row = [basic_var] + list(self.tableau[i, :])
+            self.tableau_rows.append(row)
+
         for i in range(self.num_goals):
-            new_tableau, new_row_headers, stop = self.simplex_method(i)
-            if stop:
+            row = [f'Z{i + 1}'] + list(self.tableau[self.num_constraints + i, :])
+            self.tableau_rows.append(row)
+
+        self.steps.append(self.format_tableau_as_string())
+
+    def make_consistent(self):  
+        for i in range (self.num_goals) :
+            goal_row = self.num_constraints + i
+            self.tableau[goal_row,] = self.tableau[goal_row,] + self.priority[i]*self.tableau[goal_row-self.num_goals]
+
+    def solve_priority(self, priority_level,index, display_steps=False):
+        iteration = 0
+        while True:
+            if display_steps:
+                self.display_tableau()
+            
+            if all(self.tableau[self.num_constraints+index, :-1] >= 0):
+                self.status = 'optimal'
                 break
-            self.tableau = new_tableau
-            self.row_headers = new_row_headers
-            self.steps.append(self.format_tableau())
             
-            if all(header in self.row_headers for header in self.headers[:self.num_vars]):
-                self.extract_solution()
-                return
+            entering_var = np.argmin(self.tableau[self.num_constraints+index, :-1])
+            
+            if all(self.tableau[:-1, entering_var] <= 0):
+                self.status = 'unbounded'
+                break
+            
+            ratios = []
+            for i in range(self.num_constraints):
+                if self.tableau[i, entering_var] > 0:
+                    ratios.append(self.tableau[i, -1] / self.tableau[i, entering_var])
+                else:
+                    ratios.append(np.inf)
+            leaving_var = np.argmin(ratios)
+            
+            pivot_element = self.tableau[leaving_var, entering_var]
+            self.tableau[leaving_var, :] /= pivot_element
+            for i in range(self.num_constraints + 1):
+                if i != leaving_var:
+                    self.tableau[i, :] -= self.tableau[i, entering_var] * self.tableau[leaving_var, :]
+            
+            self.basis[leaving_var] = entering_var
+            iteration += 1
+
+    def solve(self, display_steps=False):
+        self.initialize_tableau()
+        self.make_consistent()
+        priority_map = {priority: index for index, priority in enumerate(self.priority)}
+        sorted_priorities = sorted(priority_map.items(), key=lambda item: item[0], reverse=True)
+        for priority ,index in sorted_priorities:
+         self.solve_priority(priority,index, display_steps)
         
-        self.extract_solution()
-    
-    def simplex_method(self, goal_index):
-        max_iterations = 1000  
-        iterations = 0
-        while iterations < max_iterations:
-            pivot_col = np.argmax(self.tableau[goal_index, :-1])
-            if self.tableau[goal_index, pivot_col] <= 0:
-                return self.tableau, self.row_headers, False
-            
-            valid_rows = np.where((self.tableau[:, pivot_col] > 0) & (~np.char.startswith(self.row_headers, 'Z')))[0]
-            if len(valid_rows) == 0:
-                return self.tableau, self.row_headers, True
-            
-            ratios = self.tableau[valid_rows, -1] / self.tableau[valid_rows, pivot_col]
-            pivot_row = valid_rows[np.argmin(ratios)]
-            
-            if np.isinf(ratios[np.argmin(ratios)]):
-                return self.tableau, self.row_headers, True
-            
-            pivot_element = self.tableau[pivot_row, pivot_col]
-            if pivot_element == 0:
-                return self.tableau, self.row_headers, True
-            
-            self.tableau[pivot_row, :] /= pivot_element
-            for i in range(len(self.tableau)):
-                if i != pivot_row:
-                    self.tableau[i, :] -= self.tableau[i, pivot_col] * self.tableau[pivot_row, :]
-            
-            self.row_headers[pivot_row] = self.headers[pivot_col]
-            iterations += 1
+        self.optimal_solution = np.zeros(self.num_vars)
+        for i in range(self.num_constraints):
+            if self.basis[i] < self.num_vars:
+                self.optimal_solution[self.basis[i]] = self.tableau[i, -1]
+        self.optimal_value = self.tableau[-1, -1]
+    def get_results(self):
         
-        return self.tableau, self.row_headers, False
-    
-    def extract_solution(self):
-        self.solution = [0.0] * self.num_vars
-        for i in range(self.num_vars):
-            var_name = f"x{i+1}"
-            if var_name in self.row_headers:
-                self.solution[i] = float(self.tableau[self.row_headers.index(var_name), -1])
-    
-    def format_tableau(self):
-        table_str = "Basic\t" + "\t".join(self.headers) + "\n"
-        for i, row_name in enumerate(self.row_headers):
-            table_str += f"{row_name}\t" + "\t".join(map(lambda x: f"{x:.2f}", self.tableau[i])) + "\n"
-        return table_str
-    
+        return {
+            'optimal_solution': self.optimal_solution,
+            'optimal_value': self.optimal_value,
+            'status': self.status,
+            'steps': self.steps
+        }
+
+
 
 
 def main():
-    goals = [([200, 0], 1000, 1), ([100, 400], 1200, 2), ([0, 250], 800, 1)]
-    constraints = [[1500, 3000]]
-    rhs = [15000]
-    constraint_types = ['<=']
-    var_restrictions = ['>=0', '>=0']
-    gp = GoalProgramming(goals, constraints, rhs, constraint_types, var_restrictions)
-    gp.solve()
-    print(gp.solution)
-    for step in gp.steps:
-        print (step)
+    c = [5, -4]
+    A = [
+        [1.5,3],  
+        [200,0],  
+        [100,400],
+        [0,250]  
+    ]
+    b = [15, 1000, 1200 ,800]  
+    goals = [30, 15,100]  
+    priority = [1, 2 ,1]  
+    constraint_types = ['<=','>=', '>=', '>=']
+    variable_restrictions = ['non-negative', 'non-negative']
 
+    solver = GoalSolver(c, A, b, goals, priority, constraint_types, variable_restrictions)
+    solver.solve(display_steps=True)
+    results = solver.get_results()
+    print("\nOptimal Solution:", results['optimal_solution'])
+    print("Optimal Value:", results['optimal_value'])
+    print("Status:", results['status'])
+    for step in results['steps']:
+        print(step)
+    
 
 main()
