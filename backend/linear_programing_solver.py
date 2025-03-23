@@ -19,7 +19,10 @@ class LinearProgrammingSolver:
 
     def solve(self):
         if self.method == "simplex":
-            return self.simplex_method()
+            if 'unrestricted' in self.var_restrictions:
+                return self.simplex_method_with_unrestricted_variables()
+            else:
+                return self.simplex_method()
         elif self.method == "big-m":
             return self.big_m_method()
         elif self.method == "two-phase":
@@ -437,17 +440,17 @@ class LinearProgrammingSolver:
 def main():
 
 
-    objective = [30 , -4]
-    constraints = [[5, -1], [1, 0]]
-    rhs = [30, 5]
-    constraint_types = ['<=', '<=']
-    var_restrictions = ['>=0','unrestricted']
+    # objective = [30 , -4]
+    # constraints = [[5, -1], [1, 0]]
+    # rhs = [30, 5]
+    # constraint_types = ['<=', '<=']
+    # var_restrictions = ['>=0','unrestricted']
 
-    # objective = [5, -4, 6, -8]  # min
-    # constraints = [[1, 2, 2, 4], [2, -1, 1, 2], [4, -2, 1, -1]]
-    # rhs = [40, 8, 10]
-    # constraint_types = ['<=', '<=', '<=']
-    # var_restrictions = ['>=','>=0', '>=0', '>=0']
+    objective = [5, -4, 6, -8]  # min
+    constraints = [[1, 2, 2, 4], [2, -1, 1, 2], [4, -2, 1, -1]]
+    rhs = [40, 8, 10]
+    constraint_types = ['<=', '<=', '<=']
+    var_restrictions = ['>=','>=0', '>=0', '>=0']
     
 
 
@@ -468,7 +471,7 @@ def main():
     # solution = solver.solve()
     
     
-    solver = LinearProgrammingSolver(objective, constraints, rhs, constraint_types, var_restrictions, method="simplex")
+    solver = LinearProgrammingSolver(objective, constraints, rhs, constraint_types, var_restrictions, method="simplex", type='min')
     solution = solver.simplex_method_with_unrestricted_variables()
 
 
