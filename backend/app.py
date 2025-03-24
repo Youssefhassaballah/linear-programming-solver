@@ -11,7 +11,7 @@ CORS(app)
 @app.route('/solve', methods=['GET','POST'])
 def solve():
     data = request.json
-    if data['method']=='goal_programming':
+    if data['method']=='goal':
         pass
     else:
         print(request.json)
