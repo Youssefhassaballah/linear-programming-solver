@@ -35,14 +35,21 @@ def solve():
             }
             return jsonify(k)
     else:
+        if ">=" in data['constraint_types']:
+            method = data['method']
+        elif "=" in data['constraint_types']:
+            method = data['method']
+        else:
+            method = 'simplex'
         print(request.json)
         objective = data['objective'] 
         constraints = data['constraints']
         rhs = data['rhs']
         constraint_types = data['constraint_types']
         var_restrictions = data['var_restrictions']
-        method = data['method']
-        solver = LinearProgrammingSolver(objective, constraints, rhs, constraint_types, var_restrictions, method=method)
+        type = data['optimization']
+        
+        solver = LinearProgrammingSolver(objective, constraints, rhs, constraint_types, var_restrictions, method=method, type=type)
         solution = solver.solve()
         return jsonify(solution)
 
