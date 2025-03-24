@@ -115,7 +115,7 @@ class SimplexSolver:
 
     def setup_variable_names(self):
         """Set up names for variables in the tableau for display purposes."""
-        self.variable_names = [f'x{i}' for i in range(self.num_variables)]
+        self.variable_names = [f'x{i+1}' for i in range(self.num_variables)]
         self.variable_names.insert(0, '')  # Empty cell for row labels
 
         # Add slack variable names
@@ -252,8 +252,8 @@ class PreemptiveGoalProgramming:
 
     def setup_variable_names(self):
         """Set up names for variables in the tableau for display purposes."""
-        self.variable_names = [f'x{i}' for i in range(self.num_variables)]
-        self.variable_names.insert(0, '')  # Empty cell for row labels
+        self.variable_names = [f'x{i+1}' for i in range(self.num_variables)]
+        self.variable_names.insert(0, 'basic')  # Empty cell for row labels
 
         # Add positive deviation variable names
         for i in range(self.num_goals):
@@ -435,15 +435,17 @@ def main():
     # Solve and get the solution
     solution = solver.solve()
 
-
     print("\nTableau Steps:")
 
     for step in solver.tableau_steps:
         print(step)
-    print("\nFinal RHS:")
-    print(solver.tableau_rhs)
     print("\nOptimal Solution:")
     print(solution)
 
+
+    k = {"optimal_solution": solution.tolist(), 
+        "steps":solver.tableau_steps
+    }
+    print(k)
 
 main()
