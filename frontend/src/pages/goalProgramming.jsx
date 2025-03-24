@@ -1,35 +1,7 @@
 import React, { useState, useEffect } from "react";
 import solveLinearProgramming from "../services/getSolution";
-import Solution from "../components/Solution";
-import Steps from "../components/Steps";
-
-const ObjectiveFunction = ({
-  objective,
-  setObjective,
-  setOptimizationType,
-}) => (
-  <div className="bg-white shadow-lg rounded-lg p-6 mb-6 transition-all hover:shadow-xl">
-    <h2 className="text-2xl font-bold text-indigo-700 mb-4">
-      Objective Function
-    </h2>
-    <div className="flex flex-col md:flex-row gap-4">
-      <input
-        type="text"
-        value={objective}
-        onChange={(e) => setObjective(e.target.value)}
-        placeholder="Enter objective function (e.g., 3x1 + 2x2)"
-        className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
-      />
-      <select
-        onChange={(e) => setOptimizationType(e.target.value)}
-        className="px-4 py-2 bg-white border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
-      >
-        <option value="max">Maximize</option>
-        <option value="min">Minimize</option>
-      </select>
-    </div>
-  </div>
-);
+import GoalSolution from "../components/GoalSolution";
+import GoalSteps from "../components/GoalSteps";
 
 const Constraints = ({
   constraints,
@@ -43,11 +15,6 @@ const Constraints = ({
     const newConstraints = [...constraints];
     newConstraints[index] = value;
     setConstraints(newConstraints);
-  };
-
-  const updateVariableType = (variable, value) => {
-    const newVariableTypes = { ...variableTypes, [variable]: value };
-    setVariableTypes(newVariableTypes);
   };
 
   const removeConstraint = (index) => {
@@ -85,81 +52,62 @@ const Constraints = ({
           Add Constraint
         </button>
       </div>
-      <h2 className="text-2xl font-bold text-indigo-700 mb-4 mt-6">
-        Variable Types
-      </h2>
-      <div className="space-y-3">
-        {variables.map((variable) => (
-          <div key={variable} className="flex items-center gap-2">
-            <span className="font-medium">{variable}</span>
-            <select
-              value={variableTypes[variable] || "non-negative"}
-              onChange={(e) => updateVariableType(variable, e.target.value)}
-              className="px-4 py-2 bg-white border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
-            >
-              <option value="non-negative">Non-negative</option>
-              <option value="unrestricted">Unrestricted</option>
-            </select>
-          </div>
-        ))}
-      </div>
     </div>
   );
 };
 
-const PriritiesSelection = ({ constraints, priorities, setPriorities }) => {
-  useEffect(() => {
-    setPriorities(
-      Array.from({ length: constraints.length }, (_, i) => (i + 1).toString())
-    );
-  }, [constraints.length, setPriorities]);
-
-  const handlePriorityChange = (index, value) => {
-    const newPriorities = [...priorities];
-    newPriorities[index] = value;
-    setPriorities(newPriorities);
-    console.log(priorities);
+const Goals = ({ goals, setGoals, variables }) => {
+  const addGoal = () => setGoals([...goals, ""]);
+  const updateGoal = (index, value) => {
+    const newGoals = [...goals];
+    newGoals[index] = value;
+    setGoals(newGoals);
   };
 
-  const handleKeyDown = (e) => {
-    const { key } = e;
-    const isNumber = /^[1-9]$/.test(key);
-    const isWithinRange = parseInt(key) <= constraints.length;
-    const isBackspace = key === "Backspace";
-
-    if ((!isNumber && !isBackspace) || (isNumber && !isWithinRange)) {
-      e.preventDefault();
-    }
+  const removeGoal = (index) => {
+    const newGoals = goals.filter((_, i) => i !== index);
+    setGoals(newGoals.length > 0 ? newGoals : [""]);
   };
 
   return (
     <div className="bg-white shadow-lg rounded-lg p-6 mb-6 transition-all hover:shadow-xl">
-      <h2 className="text-2xl font-bold text-indigo-700 mb-4">
-        Priorities Selection
-      </h2>
-      <div className="text-md font-bold text-indigo-800 mb-2">
-        Enter the order of constraints:
-      </div>
-      <div className="flex items-center space-x-2">
-        {constraints.map((constraint, index) => (
-          <React.Fragment key={index}>
+      <h2 className="text-2xl font-bold text-indigo-700 mb-4">Goals</h2>
+      <h3 className="text-md font-bold text-indigo-800 mb-4">
+        Enter goals due to their priority
+      </h3>
+      <div className="space-y-3">
+        {goals.map((goal, index) => (
+          <div key={index} className="flex items-center gap-2">
             <input
               type="text"
-              value={priorities[index]}
-              onChange={(e) => handlePriorityChange(index, e.target.value)}
-              onKeyDown={handleKeyDown}
-              className="border rounded p-2 w-12 text-center"
+              value={goal}
+              onChange={(e) => updateGoal(index, e.target.value)}
+              placeholder={`Goal ${index + 1} (e.g., 2x1 + 3x2 <= 10)`}
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
             />
-            {index < constraints.length - 1 && <span>{">"}</span>}
-          </React.Fragment>
+            {goals.length > 1 && (
+              <button
+                onClick={() => removeGoal(index)}
+                className="px-3 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 transition-all"
+              >
+                ✖
+              </button>
+            )}
+          </div>
         ))}
+        <button
+          onClick={addGoal}
+          className="mt-2 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50 transition-all"
+        >
+          Add Goal
+        </button>
       </div>
     </div>
   );
 };
 
 const extractCoefficients = (expression, variables) => {
-  const regex = /([-+]?\d*\.?\d*)\s*([a-zA-Z]\d*)/g;
+  const regex = /([-+]?\d*\.?\d*)\s*(x\d+)/g;
   let match;
   const coefficients = Array(variables.length).fill(0);
 
@@ -195,7 +143,7 @@ const extractRightHandSide = (constraint) => {
 };
 
 const extractVariables = (expression) => {
-  const regex = /([a-zA-Z]\d*)/g;
+  const regex = /(x\d+)/g;
   const variables = new Set();
   let match;
   while ((match = regex.exec(expression)) !== null) {
@@ -205,26 +153,33 @@ const extractVariables = (expression) => {
 };
 
 const GoalProgrammingPage = () => {
-  const [objective, setObjective] = useState("");
-  const [optimizationType, setOptimizationType] = useState("max");
   const [constraints, setConstraints] = useState([""]);
   const [variableTypes, setVariableTypes] = useState({});
-  const [result, setResult] = useState(null);
+  const [result, setResult] = useState({
+    optimal_solution: [5.0, 2.5],
+    steps: [
+      "     x0      x1      S0+   S1+   S2+   S0-   S1-   S2-   S3   RHS\nZ0   0.0     0.0     0.0   0.0   0.0   -1.0  0.0   0.0   0.0  0.0\nZ1   0.0     0.0     0.0   0.0   0.0   0.0   -1.0  0.0   0.0  0.0\nZ2   0.0     0.0     0.0   0.0   0.0   0.0   0.0   -1.0  0.0  0.0\nS0-  200.0   0.0     -1.0  0.0   0.0   1.0   0.0   0.0   0.0  1000.0\nS1-  100.0   400.0   0.0   -1.0  0.0   0.0   1.0   0.0   0.0  1200.0\nS2-  0.0     250.0   0.0   0.0   -1.0  0.0   0.0   1.0   0.0  800.0\nS3   1500.0  3000.0  0.0   0.0   0.0   0.0   0.0   0.0   1.0  15000.0",
+      "     x0   x1      S0+     S1+   S2+   S0-    S1-  S2-  S3   RHS\nZ0   0.0  0.0     0.0     0.0   0.0   -1.0   0.0  0.0  0.0  0.0\nZ1   0.0  400.0   0.5     -1.0  0.0   -0.5   0.0  0.0  0.0  700.0\nZ2   0.0  250.0   0.0     0.0   -1.0  0.0    0.0  0.0  0.0  800.0\nx0   1.0  0.0     -0.005  0.0   0.0   0.005  0.0  0.0  0.0  5.0\nS1-  0.0  400.0   0.5     -1.0  0.0   -0.5   1.0  0.0  0.0  700.0\nS2-  0.0  250.0   0.0     0.0   -1.0  0.0    0.0  1.0  0.0  800.0\nS3   0.0  3000.0  7.5     0.0   0.0   -7.5   0.0  0.0  1.0  7500.0",
+      "     x0   x1   S0+      S1+      S2+   S0-       S1-     S2-  S3   RHS\nZ0   0.0  0.0  0.0      0.0      0.0   -1.0      0.0     0.0  0.0  0.0\nZ1   0.0  0.0  0.0      0.0      0.0   0.0       -1.0    0.0  0.0  0.0\nZ2   0.0  0.0  -0.3125  0.625    -1.0  0.3125    -0.625  0.0  0.0  362.5\nx0   1.0  0.0  -0.005   0.0      0.0   0.005     0.0     0.0  0.0  5.0\nx1   0.0  1.0  0.00125  -0.0025  0.0   -0.00125  0.0025  0.0  0.0  1.75\nS2-  0.0  0.0  -0.3125  0.625    -1.0  0.3125    -0.625  1.0  0.0  362.5\nS3   0.0  0.0  3.75     7.5      0.0   -3.75     -7.5    0.0  1.0  2250.0",
+      "     x0   x1   S0+     S1+  S2+   S0-      S1-   S2-  S3            RHS\nZ0   0.0  0.0  0.0     0.0  0.0   -1.0     0.0   0.0  0.0                    0.0\nZ1   0.0  0.0  0.0     0.0  0.0   0.0      -1.0  0.0  0.0                    0.0\nZ2   0.0  0.0  -0.625  0.0  -1.0  0.625    0.0   0.0  -0.08333333333333333   175.0\nx0   1.0  0.0  -0.005  0.0  0.0   0.005    0.0   0.0  0.0                    5.0\nx1   0.0  1.0  0.0025  0.0  0.0   -0.0025  0.0   0.0  0.0003333333333333333  2.5\nS2-  0.0  0.0  -0.625  0.0  -1.0  0.625    0.0   1.0  -0.08333333333333333   175.0\nS1+  0.0  0.0  0.5     1.0  0.0   -0.5     -1.0  0.0  0.13333333333333333    300.0",
+    ],
+  });
+  // "'optimal_solution': [5.0, 2.5],'steps': ['     x0      x1      S0+   S1+   S2+   S0-   S1-   S2-   S3   RHS\nZ0   0.0     0.0     0.0   0.0   0.0   -1.0  0.0   0.0   0.0  0.0\nZ1   0.0     0.0     0.0   0.0   0.0   0.0   -1.0  0.0   0.0  0.0\nZ2   0.0     0.0     0.0   0.0   0.0   0.0   0.0   -1.0  0.0  0.0\nS0-  200.0   0.0     -1.0  0.0   0.0   1.0   0.0   0.0   0.0  1000.0\nS1-  100.0   400.0   0.0   -1.0  0.0   0.0   1.0   0.0   0.0  1200.0\nS2-  0.0     250.0   0.0   0.0   -1.0  0.0   0.0   1.0   0.0  800.0\nS3   1500.0  3000.0  0.0   0.0   0.0   0.0   0.0   0.0   1.0  15000.0', '     x0   x1      S0+     S1+   S2+   S0-    S1-  S2-  S3   RHS\nZ0   0.0  0.0     0.0     0.0   0.0   -1.0   0.0  0.0  0.0  0.0\nZ1   0.0  400.0   0.5     -1.0  0.0   -0.5   0.0  0.0  0.0  700.0\nZ2   0.0  250.0   0.0     0.0   -1.0  0.0    0.0  0.0  0.0  800.0\nx0   1.0  0.0     -0.005  0.0   0.0   0.005  0.0  0.0  0.0  5.0\nS1-  0.0  400.0   0.5     -1.0  0.0   -0.5   1.0  0.0  0.0  700.0\nS2-  0.0  250.0   0.0     0.0   -1.0  0.0    0.0  1.0  0.0  800.0\nS3   0.0  3000.0  7.5     0.0   0.0   -7.5   0.0  0.0  1.0  7500.0', '     x0   x1   S0+      S1+      S2+   S0-       S1-     S2-  S3   RHS\nZ0   0.0  0.0  0.0      0.0      0.0   -1.0      0.0     0.0  0.0  0.0\nZ1   0.0  0.0  0.0      0.0      0.0   0.0       -1.0    0.0  0.0  0.0\nZ2   0.0  0.0  -0.3125  0.625    -1.0  0.3125    -0.625  0.0  0.0  362.5\nx0   1.0  0.0  -0.005   0.0      0.0   0.005     0.0     0.0  0.0  5.0\nx1   0.0  1.0  0.00125  -0.0025  0.0   -0.00125  0.0025  0.0  0.0  1.75\nS2-  0.0  0.0  -0.3125  0.625    -1.0  0.3125    -0.625  1.0  0.0  362.5\nS3   0.0  0.0  3.75     7.5      0.0   -3.75     -7.5    0.0  1.0  2250.0', '     x0   x1   S0+     S1+  S2+   S0-      S1-   S2-  S3            RHS\nZ0   0.0  0.0  0.0     0.0  0.0   -1.0     0.0   0.0  0.0                    0.0\nZ1   0.0  0.0  0.0     0.0  0.0   0.0      -1.0  0.0  0.0                    0.0\nZ2   0.0  0.0  -0.625  0.0  -1.0  0.625    0.0   0.0  -0.08333333333333333   175.0\nx0   1.0  0.0  -0.005  0.0  0.0   0.005    0.0   0.0  0.0                    5.0\nx1   0.0  1.0  0.0025  0.0  0.0   -0.0025  0.0   0.0  0.0003333333333333333  2.5\nS2-  0.0  0.0  -0.625  0.0  -1.0  0.625    0.0   1.0  -0.08333333333333333   175.0\nS1+  0.0  0.0  0.5     1.0  0.0   -0.5     -1.0  0.0  0.13333333333333333    300.0']"
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [variables, setVariables] = useState([]);
-  const [priorities, setPriorities] = useState([]);
+  const [goals, setGoals] = useState([""]); // Initialize with one goal
 
   useEffect(() => {
-    setVariables(extractVariables(objective));
-  }, [objective]);
+    const allConstraints = [...constraints, ...goals];
+    setVariables(extractVariables(allConstraints.join(" ")));
+  }, [constraints, goals]);
 
   const handleSubmit = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      const objectiveCoefficients = extractCoefficients(objective, variables);
       const parsedConstraints = constraints.map((constraint) => {
         const coefficients = extractCoefficients(
           constraint.split(/(<=|>=|=)/)[0],
@@ -232,6 +187,16 @@ const GoalProgrammingPage = () => {
         );
         const inequality = extractInequality(constraint);
         const rhs = extractRightHandSide(constraint);
+        return { coefficients, inequality, rhs };
+      });
+
+      const parsedGoals = goals.map((goal) => {
+        const coefficients = extractCoefficients(
+          goal.split(/(<=|>=|=)/)[0],
+          variables
+        );
+        const inequality = extractInequality(goal);
+        const rhs = extractRightHandSide(goal);
         return { coefficients, inequality, rhs };
       });
 
@@ -244,24 +209,29 @@ const GoalProgrammingPage = () => {
         variableTypes[variable] === "unrestricted" ? "unrestricted" : ">=0"
       );
 
+      const goalCoefficients = parsedGoals.map((g) => g.coefficients);
+      const goalValues = parsedGoals.map((g) => g.rhs);
+      const goalDirections = parsedGoals.map((g) => g.inequality);
+
       if (
-        objectiveCoefficients.includes(null) ||
         rhs.includes(null) ||
         constraintTypes.includes(null) ||
         constraintCoefficients.some((coeffs) => coeffs.includes(null)) ||
-        varRestrictions.includes(null)
+        varRestrictions.includes(null) ||
+        goalCoefficients.some((coeffs) => coeffs.includes(null)) ||
+        goalValues.includes(null) ||
+        goalDirections.includes(null)
       ) {
         throw new Error("One or more parameters are null.");
       }
 
       const DataToSend = {
-        objective: objectiveCoefficients,
-        optimization: optimizationType,
-        constraints: constraintCoefficients,
-        rhs: rhs,
-        constraint_types: constraintTypes,
-        var_restrictions: varRestrictions,
-        priorities: priorities,
+        method: "goal",
+        constraints_coeffs: constraintCoefficients,
+        constraints_values: rhs,
+        goals_coeffs: goalCoefficients,
+        goals_values: goalValues,
+        goals_directions: goalDirections,
       };
       console.log(DataToSend);
       const apiResult = await solveLinearProgramming(DataToSend);
@@ -274,19 +244,12 @@ const GoalProgrammingPage = () => {
       setLoading(false);
     }
   };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-blue-100">
       <div className="max-w-4xl mx-auto">
         <h1 className="text-4xl font-bold text-center text-indigo-800 mb-4">
           Goal Programming Calculator
         </h1>
-
-        <ObjectiveFunction
-          objective={objective}
-          setObjective={setObjective}
-          setOptimizationType={setOptimizationType}
-        />
 
         <Constraints
           constraints={constraints}
@@ -295,13 +258,7 @@ const GoalProgrammingPage = () => {
           setVariableTypes={setVariableTypes}
           variables={variables}
         />
-
-        <PriritiesSelection
-          constraints={constraints}
-          priorities={priorities}
-          setPriorities={setPriorities}
-        />
-
+        <Goals goals={goals} setGoals={setGoals} variables={variables} />
         {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-6">
             <strong className="font-bold">Error!</strong>
@@ -321,8 +278,8 @@ const GoalProgrammingPage = () => {
           {loading ? "Processing..." : "Solve"}
         </button>
 
-        {result && <Solution data={result} />}
-        {result && <Steps data={result} />}
+        {result && <GoalSolution data={result} />}
+        {result && <GoalSteps data={result} />}
       </div>
     </div>
   );
